@@ -13,19 +13,38 @@ let package = Package(
             name: "WalletConnect",
             targets: ["WalletConnect"]),
     ],
-    dependencies: [
-        .package(url: "https://github.com/krzyzanowskim/CryptoSwift.git", .upToNextMinor(from: "1.4.1")),
-    ],
     targets: [
         .target(
             name: "WalletConnect",
-            dependencies: ["CryptoSwift"]),
+            dependencies: ["Relayer", "WalletConnectUtils", "WalletConnectKMS"],
+            path: "Sources/WalletConnect"),
+        .target(
+            name: "Relayer",
+            dependencies: ["WalletConnectUtils"],
+            path: "Sources/Relayer"),
+        .target(
+            name: "WalletConnectKMS",
+            dependencies: ["WalletConnectUtils"],
+            path: "Sources/WalletConnectKMS"),
+        .target(
+            name: "WalletConnectUtils",
+            dependencies: []),
         .testTarget(
             name: "WalletConnectTests",
-            dependencies: ["WalletConnect"]),
+            dependencies: ["WalletConnect", "TestingUtils", "WalletConnectKMS"]),
         .testTarget(
             name: "IntegrationTests",
-            dependencies: ["WalletConnect"]),
+            dependencies: ["WalletConnect", "TestingUtils", "WalletConnectKMS"]),
+        .testTarget(
+            name: "RelayerTests",
+            dependencies: ["Relayer", "WalletConnectUtils", "TestingUtils"]),
+        .testTarget(
+            name: "WalletConnectKMSTests",
+            dependencies: ["WalletConnectKMS", "WalletConnectUtils", "TestingUtils"]),
+        .target(
+            name: "TestingUtils",
+            dependencies: ["WalletConnectUtils", "WalletConnectKMS"],
+            path: "Tests/TestingUtils"),
     ],
     swiftLanguageVersions: [.v5]
 )

@@ -6,7 +6,9 @@ class MockedNetworkRelayer: NetworkRelaying {
     var onConnect: (() -> ())?
     var onMessage: ((String, String) -> ())?
     var error: Error?
-    func publish(topic: String, payload: String, completion: @escaping ((Error?) -> ())) -> Int64 {
+    var prompt = false
+    func publish(topic: String, payload: String, prompt: Bool, completion: @escaping ((Error?) -> ())) -> Int64 {
+        self.prompt = prompt
         completion(error)
         return 0
     }
@@ -18,4 +20,10 @@ class MockedNetworkRelayer: NetworkRelaying {
     func unsubscribe(topic: String, completion: @escaping ((Error?) -> ())) -> Int64? {
         return 0
     }
+    func connect() {
+    }
+    
+    func disconnect(closeCode: URLSessionWebSocketTask.CloseCode) {
+    }
+    
 }

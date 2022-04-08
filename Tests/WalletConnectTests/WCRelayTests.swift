@@ -2,27 +2,28 @@
 import Foundation
 import Combine
 import XCTest
+import WalletConnectUtils
+@testable import TestingUtils
 @testable import WalletConnect
 
 class WalletConnectRelayTests: XCTestCase {
     var wcRelay: WalletConnectRelay!
     var networkRelayer: MockedNetworkRelayer!
-    var serialiser: MockedJSONRPCSerialiser!
-    var crypto: Crypto!
+    var serializer: SerializerMock!
 
     private var publishers = [AnyCancellable]()
 
     override func setUp() {
-        let logger = ConsoleLogger()
-        serialiser = MockedJSONRPCSerialiser()
+        let logger = ConsoleLoggerMock()
+        serializer = SerializerMock()
         networkRelayer = MockedNetworkRelayer()
-        wcRelay = WalletConnectRelay(networkRelayer: networkRelayer, jsonRpcSerialiser: serialiser, logger: logger, jsonRpcHistory: JsonRpcHistory(logger: logger, keyValueStorage: RuntimeKeyValueStorage()))
+        wcRelay = WalletConnectRelay(networkRelayer: networkRelayer, serializer: serializer, logger: logger, jsonRpcHistory: JsonRpcHistory(logger: logger, keyValueStore: KeyValueStore<WalletConnect.JsonRpcRecord>(defaults: RuntimeKeyValueStorage(), identifier: "")))
     }
 
     override func tearDown() {
         wcRelay = nil
         networkRelayer = nil
-        serialiser = nil
+        serializer = nil
     }
     
     func testNotifiesOnEncryptedWCJsonRpcRequest() {
@@ -31,7 +32,7 @@ class WalletConnectRelayTests: XCTestCase {
         wcRelay.wcRequestPublisher.sink { (request) in
             requestExpectation.fulfill()
         }.store(in: &publishers)
-        serialiser.deserialised = SerialiserTestData.pairingApproveJSONRPCRequest
+        serializer.deserialized = pairingApproveJSONRPCRequest
         networkRelayer.onMessage?(topic, testPayload)
         waitForExpectations(timeout: 1.001, handler: nil)
     }
@@ -41,8 +42,8 @@ class WalletConnectRelayTests: XCTestCase {
         let topic = "93293932"
         let request = getWCSessionPayloadRequest()
         let sessionPayloadResponse = getWCSessionPayloadResponse()
-        serialiser.deserialised = sessionPayloadResponse
-        serialiser.serialised = try! sessionPayloadResponse.json().toHexEncodedString()
+        serializer.deserialized = sessionPayloadResponse
+        serializer.serialized = try! sessionPayloadResponse.json().toHexEncodedString()
         wcRelay.request(topic: topic, payload: request) { result in
             XCTAssertEqual(result, .success(sessionPayloadResponse))
             responseExpectation.fulfill()
@@ -58,8 +59,8 @@ class WalletConnectRelayTests: XCTestCase {
         let topic = "fefc3dc39cacbc562ed58f92b296e2d65a6b07ef08992b93db5b3cb86280635a"
         let request = getWCSessionPayloadRequest()
         let sessionPayloadResponse = getWCSessionPayloadResponse()
-        serialiser.deserialised = sessionPayloadResponse
-        serialiser.serialised = "encrypted_message"
+        serializer.deserialized = sessionPayloadResponse
+        serializer.serialized = "encrypted_message"
         wcRelay.request(topic: topic, payload: request) { result in
             XCTAssertEqual(result, .success(sessionPayloadResponse))
             responseExpectation.fulfill()
@@ -70,8 +71,20 @@ class WalletConnectRelayTests: XCTestCase {
         waitForExpectations(timeout: 0.01, handler: nil)
     }
     
-    func testRequestCompletesWithError() {
-        //todo
+    func testPromptOnSessionPayload() {
+        let topic = "fefc3dc39cacbc562ed58f92b296e2d65a6b07ef08992b93db5b3cb86280635a"
+        let request = getWCSessionPayloadRequest()
+        networkRelayer.prompt = false
+        wcRelay.request(topic: topic, payload: request) { _ in }
+        XCTAssertTrue(networkRelayer.prompt)
+    }
+    
+    func testNoPromptOnSessionUpgrade() {
+        let topic = "fefc3dc39cacbc562ed58f92b296e2d65a6b07ef08992b93db5b3cb86280635a"
+        let request = getWCSessionUpgrade()
+        networkRelayer.prompt = false
+        wcRelay.request(topic: topic, payload: request) { _ in }
+        XCTAssertTrue(networkRelayer.prompt)
     }
 }
 
@@ -85,6 +98,14 @@ extension WalletConnectRelayTests {
         let wcRequestId: Int64 = 123456
         let sessionPayloadParams = SessionType.PayloadParams(request: SessionType.PayloadParams.Request(method: "method", params: AnyCodable("params")), chainId: "")
         let params = WCRequest.Params.sessionPayload(sessionPayloadParams)
+        let wcRequest = WCRequest(id: wcRequestId, method: WCRequest.Method.sessionPayload, params: params)
+        return wcRequest
+    }
+    
+    func getWCSessionUpgrade() -> WCRequest {
+        let wcRequestId: Int64 = 123456
+        let sessionUpgradeParams = SessionType.UpgradeParams(permissions: SessionPermissions(blockchain: SessionPermissions.Blockchain(chains: []), jsonrpc: SessionPermissions.JSONRPC(methods: []), notifications: SessionPermissions.Notifications(types: [])))
+        let params = WCRequest.Params.sessionUpgrade(sessionUpgradeParams)
         let wcRequest = WCRequest(id: wcRequestId, method: WCRequest.Method.sessionPayload, params: params)
         return wcRequest
     }
@@ -105,3 +126,21 @@ fileprivate let testPayload =
    }
 }
 """
+
+fileprivate let pairingApproveJSONRPCRequest = WCRequest(
+    id: 0,
+    jsonrpc: "2.0",
+    method: WCRequest.Method.pairingApprove,
+    params: WCRequest.Params.pairingApprove(
+        PairingType.ApprovalParams(
+            relay: RelayProtocolOptions(
+                protocol: "waku",
+                params: nil),
+            responder: PairingParticipant(publicKey: "be9225978b6287a02d259ee0d9d1bcb683082d8386b7fb14b58ac95b93b2ef43"),
+            expiry: 1632742217,
+            state: PairingState(metadata: AppMetadata(
+                name: "iOS",
+                description: nil,
+                url: nil,
+                icons: nil))))
+)
