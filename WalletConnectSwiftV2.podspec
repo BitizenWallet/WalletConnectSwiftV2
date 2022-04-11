@@ -15,25 +15,25 @@ A new flutter plugin project.
   s.source           = { :path => '.' }
   s.platform = :ios, '13.0'
 
-  s.subspec 'WalletConnectSwiftV2' do |r|
-      r.dependency 'Relayer'
-      r.dependency 'WalletConnectUtils'
-      r.dependency 'WalletConnectKMS'
-      r.source_files = 'Sources/WalletConnect/**/*'
+  s.subspec 'WalletConnectUtils' do |r|
+      r.source_files = 'Sources/WalletConnectUtils/**/*'
   end
 
   s.subspec 'Relayer' do |r|
-      r.dependency 'WalletConnectUtils'
+      r.dependency 'WalletConnectSwiftV2/WalletConnectUtils'
       r.source_files = 'Sources/Relayer/**/*'
   end
 
   s.subspec 'WalletConnectKMS' do |r|
-      r.dependency 'WalletConnectUtils'
+      r.dependency 'WalletConnectSwiftV2/WalletConnectUtils'
       r.source_files = 'Sources/WalletConnectKMS/**/*'
   end
 
-  s.subspec 'WalletConnectUtils' do |r|
-      r.source_files = 'Sources/WalletConnectUtils/**/*'
+  s.subspec 'WalletConnectSwiftV2' do |r|
+      r.dependency 'WalletConnectSwiftV2/Relayer'
+      r.dependency 'WalletConnectSwiftV2/WalletConnectUtils'
+      r.dependency 'WalletConnectSwiftV2/WalletConnectKMS'
+      r.source_files = 'Sources/WalletConnect/**/*'
   end
 
   # Flutter.framework does not contain a i386 slice.
