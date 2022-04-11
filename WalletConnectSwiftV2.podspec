@@ -10,34 +10,14 @@ Pod::Spec.new do |s|
 A new flutter plugin project.
                        DESC
   s.homepage         = 'http://example.com'
-  s.license          = { :file => '../LICENSE' }
+  s.license          = { :file => './LICENSE', :type => 'Apache License Version 2.0' }
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.platform = :ios, '13.0'
 
-  s.subspec 'WalletConnectUtils' do |r|
-      r.source_files = 'Sources/WalletConnectUtils/**/*'
-  end
-
-  s.subspec 'Relayer' do |r|
-      r.dependency 'WalletConnectSwiftV2/WalletConnectUtils'
-      r.source_files = 'Sources/Relayer/**/*'
-  end
-
-  s.subspec 'WalletConnectKMS' do |r|
-      r.dependency 'WalletConnectSwiftV2/WalletConnectUtils'
-      r.source_files = 'Sources/WalletConnectKMS/**/*'
-  end
-
-  s.subspec 'WalletConnectSwiftV2' do |r|
-      r.dependency 'WalletConnectSwiftV2/Relayer'
-      r.dependency 'WalletConnectSwiftV2/WalletConnectUtils'
-      r.dependency 'WalletConnectSwiftV2/WalletConnectKMS'
-      r.source_files = 'Sources/WalletConnect/**/*'
-  end
-
+  s.source_files = 'Sources/WalletConnect/**/*'
+  
   # Flutter.framework does not contain a i386 slice.
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
   s.swift_version = '5.0'
-  s.resource_bundles = { }
 end
